@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="40 дней">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Сорок дней Делания</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a single calm column — header & 40-cell map, then the chosen day, then a reference shelf of practices. Four alchemical stages colour the map. */
+:root{
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F2F1F6; --surface:#FFFFFF; --ink:#23213A; --muted:#6B6880; --line:#DCDAE6;
+  --accent:#5B4B8A; --accent-soft:#E7E2F4; --gold:#A87B1F;
+  --nigredo:#3A3848; --albedo:#B9BCC8; --citrinitas:#C9982E; --rubedo:#A8423A;
+  --done:#5B4B8A;
+  --display:"Cormorant Garamond", "Georgia", "Times New Roman", serif;
+  --body:"Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16151F; --surface:#201E2C; --ink:#ECEAF4; --muted:#A19DB5; --line:#353247;
+  --accent:#B3A3E6; --accent-soft:#2E2945; --gold:#E0B456;
+  --nigredo:#7C7894; --albedo:#D9DBE4; --citrinitas:#E0B456; --rubedo:#E07A6F;
+  --done:#B3A3E6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16151F; --surface:#201E2C; --ink:#ECEAF4; --muted:#A19DB5; --line:#353247;
+  --accent:#B3A3E6; --accent-soft:#2E2945; --gold:#E0B456;
+  --nigredo:#7C7894; --albedo:#D9DBE4; --citrinitas:#E0B456; --rubedo:#E07A6F;
+  --done:#B3A3E6; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6}
+.wrap{max-width:860px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2.2rem,6vw,3.2rem)}
+h2{font-size:1.75rem}
+h3{font-size:1.3rem}
+p{margin:0}
+.eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.lede{color:var(--muted);max-width:62ch}
+header{display:flex;flex-direction:column;gap:12px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.8rem;color:var(--muted)}
+input[type=date]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.stats{display:flex;gap:24px;flex-wrap:wrap}
+.stat b{display:block;font-family:var(--display);font-size:1.8rem;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:.78rem;color:var(--muted)}
+.save{font-size:.78rem;color:var(--muted);margin-left:auto}
+
+/* map */
+.map{display:flex;flex-direction:column;gap:14px}
+.stage{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:start}
+.stage-name{display:flex;flex-direction:column;border-left:3px solid var(--c);padding-left:10px}
+.stage-name b{font-family:var(--display);font-size:1.2rem;font-weight:600}
+.stage-name span{font-size:.75rem;color:var(--muted)}
+.cells{display:flex;flex-wrap:wrap;gap:6px}
+.cell{position:relative;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--c);background:var(--surface);color:var(--ink);font:600 .8rem var(--body);font-variant-numeric:tabular-nums;cursor:pointer;display:grid;place-items:center;overflow:hidden;padding:0}
+.cell .fill{position:absolute;inset:auto 0 0 0;background:var(--c);opacity:.35;transition:height .3s}
+.cell.full .fill{opacity:.85}
+.cell.full .num{color:var(--bg)}
+.cell .num{position:relative}
+.cell.today{outline:2px dashed var(--gold);outline-offset:2px}
+.cell.sel{box-shadow:0 0 0 3px var(--accent-soft),0 0 0 5px var(--accent)}
+.cell .moon{position:absolute;top:3px;right:6px;width:6px;height:6px;border-radius:50%;border:1px solid var(--muted)}
+.cell .moon.newm{background:transparent}
+.cell .moon.fullm{background:var(--gold);border-color:var(--gold)}
+.cell:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* day panel */
+.day{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:20px;border-top:5px solid var(--c)}
+.dayhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-start}
+.dayhead .meta{display:flex;flex-direction:column;gap:2px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:.75rem;padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--ink)}
+.pill.jup{background:transparent;border:1px solid var(--gold);color:var(--gold)}
+.nav{display:flex;gap:6px}
+.nav button,.btn{font:600 .85rem var(--body);background:transparent;color:var(--accent);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.nav button:disabled{opacity:.35;cursor:default}
+.task{background:var(--accent-soft);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.task p{max-width:65ch}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:4px 0}
+.check input{width:18px;height:18px;margin-top:3px;accent-color:var(--accent);flex:none}
+.check small{display:block;color:var(--muted);font-size:.8rem;line-height:1.4}
+.blocks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.block{display:flex;flex-direction:column;gap:2px;min-width:0}
+.block h3{margin-bottom:4px}
+textarea{width:100%;min-height:110px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;resize:vertical}
+
+/* shelf */
+.shelf{display:flex;flex-direction:column;gap:8px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0 16px}
+summary{cursor:pointer;padding:12px 0;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted);font-weight:400}
+details[open] summary::after{content:"–"}
+details .body{padding-bottom:16px;display:flex;flex-direction:column;gap:8px;max-width:68ch}
+details ol,details ul{margin:0;padding-left:20px}
+details li{margin:2px 0}
+.mantra{font-family:var(--display);font-size:1.35rem;font-style:italic;color:var(--gold)}
+.note{font-size:.85rem;color:var(--muted)}
+.backup{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+.brow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.backup textarea{min-height:70px;font-size:.8rem}
+footer{font-size:.8rem;color:var(--muted);max-width:65ch}
+
+@media (max-width:640px){
+  .stage{grid-template-columns:1fr;gap:6px}
+  .blocks{grid-template-columns:1fr}
+  .cell{width:36px;height:36px}
+  .save{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){.cell .fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">40 дней · звук · душа · изобилие</span>
+    <h1>Сорок дней Делания</h1>
+    <p class="lede">Четыре стадии алхимического пути: очищение, ясность, пробуждение голоса души и воплощение. Каждый день — основная практика и одно особое задание. Отмечайте сделанное, записывайте сны, знаки и наблюдения.</p>
+    <div class="controls">
+      <div class="field">
+        <label for="start">Первый день</label>
+        <input type="date" id="start">
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="st-days">0</b><span>дней пройдено</span></div>
+        <div class="stat"><b id="st-mantra">0</b><span>дней мантры подряд</span></div>
+        <div class="stat"><b id="st-tasks">0</b><span>заданий из 40</span></div>
+      </div>
+      <span class="save" id="save">Загрузка…</span>
+    </div>
+  </header>
+
+  <section class="map" id="map" aria-label="Карта сорока дней"></section>
+
+  <section class="day" id="day" aria-live="polite"></section>
+
+  <section class="shelf" aria-label="Описание практик">
+    <span class="eyebrow">Практики</span>
+
+    <details>
+      <summary>Утренняя практика (40–60 минут)</summary>
+      <div class="body">
+        <ol>
+          <li><b>Движение, 10 мин.</b> Встряхивание тела, цигун или быстрая прогулка. Сначала разбудить энергию, потом тишина.</li>
+          <li><b>Симран, 10–15 мин.</b> Внимание в точке между бровями, чуть внутрь. Мысленно повторяйте мантру: «Ом», «Со-хам» (со на вдохе, хам на выдохе) или имя Бога, которое отзывается.</li>
+          <li><b>Бхрамари, 5–10 выдохов.</b> Закройте уши, на выдохе низкое «ммм» с закрытым ртом, вибрация в центре головы. После неё внутренний звук часто слышен отчётливее.</li>
+          <li><b>Слушание звука, 15–30 мин.</b> Оставьте мантру и прислушайтесь к звону. Подробнее ниже.</li>
+          <li><b>Вопрос или намерение.</b> В самой глубокой тишине — задание дня, если оно связано с практикой.</li>
+          <li><b>Мантра Лакшми, 108 раз.</b></li>
+        </ol>
+        <p class="note">Мысли не убирайте. Отметьте («страх», «план»), почувствуйте, где это в теле, и вернитесь к звуку. Если с утра записывать сны, делайте это до того, как взять телефон.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Работа со звуком</summary>
+      <div class="body">
+        <p><b>Шанмукхи мудра.</b> Большими пальцами мягко закройте уши, остальными слегка прикройте глаза, не давя на них. Можно использовать беруши.</p>
+        <ul>
+          <li>Следуйте за звуком справа или в центре головы, звуки слева пропускайте.</li>
+          <li>Если слоёв несколько, выбирайте самый тонкий и высокий.</li>
+          <li>Слушайте всем существом. Позвольте звуку тянуть вас, а не тянитесь к нему.</li>
+          <li>На глубине спросите без слов: «Откуда он звучит?» — и следуйте к тишине.</li>
+        </ul>
+        <p><b>Звук как нить.</b> Днём на несколько секунд прислушайтесь к звону и вспомните: «Я здесь, и Ты здесь».</p>
+        <p class="note">Не напрягайтесь: усилие поднимает энергию в голову. Если звук раздражает или пугает, вернитесь к дыханию. После практики заземлитесь: стопы, вода, еда.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Мантра Лакшми</summary>
+      <div class="body">
+        <p class="mantra">Ом Шрим Махалакшмьяй Намаха</p>
+        <p>108 раз каждое утро, можно на чётках. По традиции садхану в 40 дней начинают заново, если пропущен день. Счётчик «дней мантры подряд» в шапке следит за этим.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Чаша изобилия</summary>
+      <div class="body">
+        <p>Чаша, в которой лежат монеты, зёрна риса или пшеницы, лавровый лист и камень (цитрин, пирит или авантюрин). Стоит там, где вы медитируете. Каждый вечер одна монета со словами благодарности за то, что уже есть.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Сигил</summary>
+      <div class="body">
+        <ol>
+          <li>Напишите намерение утвердительно, например: «Я свободно получаю изобилие для своего пути».</li>
+          <li>Вычеркните повторяющиеся буквы. Из оставшихся сложите символ.</li>
+          <li>В глубокой тишине звука всмотритесь в символ и «впечатайте» его в себя.</li>
+          <li>Сожгите и забудьте. Магия работает, когда желание отпущено.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details>
+      <summary>Ритуал четверга и лунный ритм</summary>
+      <div class="body">
+        <p><b>Четверг — день Юпитера.</b> Синяя, фиолетовая или золотая свеча, монета и лист с намерением. Вслух: кем я становлюсь благодаря изобилию, что смогу дать. Тишина и расширение в груди. Свечу гасят пальцами или колпачком, не задувая.</p>
+        <p><b>Луна.</b> На убывающей луне — очищение и отпускание. На растущей — привлечение. В новолуние пишут намерение, в полнолуние сжигают лист. Фаза луны показана на карточке каждого дня; на карте точкой отмечены новолуния и полнолуния.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Третий глаз: бхрамари, тратака, свет и тьма</summary>
+      <div class="body">
+        <p><b>Бхрамари, «жужжание пчелы».</b> Сидя, закройте уши большими пальцами, как в шанмукхи мудре. Вдох носом, на долгом выдохе низкое «ммм» с закрытым ртом. Чувствуйте вибрацию в центре головы и в точке между бровями. 5–10 выдохов, затем сразу переходите к слушанию звука.</p>
+        <p><b>Тратака, созерцание пламени.</b> Вечером, в тёмной комнате. Свеча на уровне глаз на расстоянии вытянутой руки. Смотрите на пламя не моргая, пока это комфортно. Закройте глаза и держите послеобраз в точке между бровями, пока он не растает. Начните с одной минуты, постепенно до трёх. Если глаза режет или слезятся, прекратите.</p>
+        <p><b>Ритм света.</b> Эпифиз узнаёт о дне и ночи через глаза, и это единственное, что достоверно влияет на его работу.</p>
+        <ul>
+          <li>Утром 10–20 минут дневного света на улице.</li>
+          <li>Вечером тёплый приглушённый свет, за час-два до сна без экранов.</li>
+          <li>Сон в полной темноте, подъём в одно и то же время.</li>
+        </ul>
+        <p class="note">Никогда не смотрите на солнце: это повреждает сетчатку необратимо. Давление между бровями — знак перенапряжения, а не «открытия»: ослабьте внимание и заземлитесь. Третий глаз открывается тишиной, а не усилием.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Бережно к себе</summary>
+      <div class="body">
+        <p>Постоянный звон стоит проверить у ЛОРа или сурдолога, особенно если он в одном ухе, пульсирует или слух снизился. Почитать звук священным и показаться врачу не противоречит одно другому.</p>
+        <p>Если радость и энергия долго не возвращаются, нарушен сон или аппетит, поговорите со специалистом. Это поддерживает путь, а не прерывает его.</p>
+        <p>Ритуал задаёт направление, путь проходят ногами: <i>ora et labora</i>.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="backup" aria-label="Резервная копия">
+    <span class="eyebrow">Резервная копия</span>
+    <p class="note">Отметки хранятся в браузере этого телефона. Раз в несколько дней нажимайте «Скопировать копию» и вставляйте текст себе в «Избранное» в Telegram. Чтобы вернуть прогресс, вставьте этот текст в поле ниже и нажмите «Восстановить».</p>
+    <div class="brow">
+      <button type="button" class="btn" id="b-copy">Скопировать копию</button>
+      <button type="button" class="btn" id="b-restore">Восстановить</button>
+      <span class="note" id="b-msg" role="status"></span>
+    </div>
+    <textarea id="b-text" placeholder="Сюда вставляется текст резервной копии"></textarea>
+  </section>
+
+  <footer>Отметки и заметки хранятся только на этом устройстве. Совет: в Safari нажмите «Поделиться» → «На экран „Домой“», и план будет открываться как приложение.</footer>
+</div>
+
+<script>
+(function(){
+  const STAGES=[
+    {key:"nigredo",name:"Нигредо",sub:"очищение · дни 1–7",from:1,to:7},
+    {key:"albedo",name:"Альбедо",sub:"звук и сердце · дни 8–17",from:8,to:17},
+    {key:"citrinitas",name:"Цитринитас",sub:"голос души · дни 18–29",from:18,to:29},
+    {key:"rubedo",name:"Рубедо",sub:"воплощение · дни 30–40",from:30,to:40}
+  ];
+  const TASKS=[null,
+    ["Намерение пути","Напишите, зачем вы входите в эти сорок дней и что хотите оставить позади. Обустройте место практики и соберите чашу изобилия."],
+    ["Порядок в деньгах","Наведите порядок в кошельке, документах, банковских приложениях. Выбросьте сломанное и просроченное."],
+    ["Честный взгляд","Выпишите все долги, свои и перед вами, без оценки. То, что видно, теряет власть."],
+    ["Письмо к деньгам","Честно напишите, что чувствуете к деньгам: страх, обиду, вину за желание. Вспомните, что о деньгах говорили в семье. Сожгите письмо: «Отпускаю старое, освобождаю место новому»."],
+    ["Прощение","Выпишите имена тех, на кого держите денежную обиду. Мысленно отпустите каждого. Себя тоже."],
+    ["Расчистка пространства","Отдайте или выбросьте 27 вещей, которые больше не служат. Застой в вещах — застой в энергии."],
+    ["Итог нигредо","Перечитайте заметки недели. Что поднялось, что стало легче? Сделайте первое подношение: помощь, пожертвование, угощение."],
+    ["Встреча со звуком","Первая сессия с шанмукхи мудрой. Найдите звук и определите его сторону: справа, слева, в центре. Запишите, каким он слышится. Вечером первая тратака, всего одна минута."],
+    ["Глубже в симран","Увеличьте симран до 15 минут перед слушанием. Заметьте, насколько легче звук держит собранный ум."],
+    ["Звук как нить","Сегодня десять раз за день на несколько секунд вернитесь к звуку. Считайте касания."],
+    ["Сердце","Перед звуком 10 минут метты: доброжелательность к себе, к близким, к нейтральному человеку, к трудному."],
+    ["Пространство звука","В практике переведите внимание с самого звука на тишину, в которой он звучит."],
+    ["Честная молитва","Обратитесь к Духу своими словами. Даже если это «я тебя не чувствую, помоги». Честность важнее красоты."],
+    ["Прогулка в молчании","30–40 минут пешком без телефона, внимание к звуку и шагам."],
+    ["Источник","На глубине спросите без слов: «Откуда звучит?» — и следуйте внутрь, к тишине."],
+    ["Большая благодарность","Вечером десять благодарностей вместо трёх. Напишите письмо благодарности живому человеку."],
+    ["Итог альбедо","Как изменилось ощущение присутствия? Что даёт звук? Запишите честно, без ожиданий."],
+    ["Археология радости","Что вы любили делать до 10–12 лет, пока никто не говорил «так нельзя» или «на этом не заработаешь»?"],
+    ["Где исчезало время","Перечислите моменты жизни, когда вы теряли счёт времени. Что вы тогда делали?"],
+    ["Зависть и боль","Чему вы завидуете? Что в мире вызывает у вас гнев или боль? Это указатели, а не пороки."],
+    ["Что даётся легко","Спросите троих близких: «Что у меня получается легко? С чем ко мне приходят?»"],
+    ["Вопрос в тишине","В конце практики один раз спросите: «Чего Ты хочешь от меня? Какой мой путь?» — и отпустите. Следующие дни записывайте знаки и синхронии."],
+    ["Инкубация сна","Перед сном запишите вопрос о пути и положите под подушку. Утром запишите всё, что помните. Повторяйте до 29-го дня."],
+    ["Письмо от души","Вопросы пишите ведущей рукой, ответы — неведущей. Начните с «Что ты хочешь мне сказать?»"],
+    ["Медитация смерти","В глубокой тишине представьте конец жизни. О чём жалеете? Что было важно? Какой след хотели оставить?"],
+    ["Нити","Перечитайте записи дней 18–25 и снов. Выпишите темы, которые повторяются."],
+    ["Телесный тест","Выпишите 5–7 вариантов пути, даже фантастических. Читайте вслух с закрытыми глазами: где расширение, где сжатие?"],
+    ["Икигай","Четыре круга: что я люблю, что у меня получается, что нужно миру, за что мне готовы платить. Где они пересекаются?"],
+    ["Направление","Сформулируйте одно предложение: куда вы идёте в ближайший год. Не идеальное, живое."],
+    ["Конкретная цель","Финансовая цель: сумма, срок и источник, связанный с вашим направлением. Запишите крупно."],
+    ["Проживание цели","После звука проживите обычный день, когда цель уже достигнута: чувства, действия, покой в теле. Затем отпустите образ."],
+    ["Сигил","Создайте сигил из намерения, зарядите в тишине звука, сожгите и забудьте."],
+    ["Карта шагов","Выпишите десять конкретных шагов к цели. Первый сделайте сегодня."],
+    ["Маленький эксперимент","Попробуйте одно действие из своего направления: предложение, пробная работа, публикация, звонок. Наблюдайте, что оживает."],
+    ["Ритуал Юпитера","Ритуал четверга: свеча, монета, намерение «кем я становлюсь». Если сегодня не четверг, назначьте его на ближайший."],
+    ["Трудный разговор","Сделайте то, чего избегали: попросите, предложите, назовите свою цену."],
+    ["Десятина","Отдайте часть дохода или времени с ощущением «у меня есть». Энергия любит движение."],
+    ["Отклик на знаки","Перечитайте записанные синхронии. На что откликнуться действием в ближайшие 48 часов?"],
+    ["Лунное намерение","Напишите намерение на растущей луне и положите на место практики до полнолуния. Если луна убывает, назначьте на ближайшее новолуние."],
+    ["Завершение Делания","Перечитайте все сорок дней. Напишите письмо себе через сорок дней. Поблагодарите. Решите, что продолжаете."]
+  ];
+  const CHECKS=[
+    {part:"Утро",items:[
+      ["dream","Записать сны","до телефона"],
+      ["move","Движение","10 минут"],
+      ["simran","Симран","10–15 минут"],
+      ["bhramari","Бхрамари","5–10 выдохов перед звуком"],
+      ["sound","Слушание звука","15–30 минут"],
+      ["lakshmi","Мантра Лакшми","108 раз"]]},
+    {part:"День",items:[
+      ["thread","Звук как нить","несколько касаний за день"],
+      ["step","Один шаг к цели","конкретное действие"]]},
+    {part:"Вечер",items:[
+      ["write","Выписать мысли","10 минут без цензуры"],
+      ["grat","Три благодарности",""],
+      ["coin","Монета в чашу","со словами благодарности"],
+      ["tratak","Тратака","1–3 минуты, с 8-го дня",8]]}
+  ];
+  function keysFor(n){return CHECKS.flatMap(g=>g.items.filter(i=>!i[3]||n>=i[3]).map(i=>i[0]))}
+  const DAYNAMES=["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+  const MONTHS=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+  const LS="sorok-dney-v1";
+
+  function todayISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  function parseISO(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d,12)}
+  function addDays(s,n){const d=parseISO(s);d.setDate(d.getDate()+n);return d}
+
+  let state={start:todayISO(),days:{}};
+  try{const raw=localStorage.getItem(LS);if(raw){const p=JSON.parse(raw);if(p&&p.start)state=p}}catch(e){}
+  let sel=null;
+
+  function dayNumToday(){const diff=Math.round((parseISO(todayISO())-parseISO(state.start))/86400000)+1;return diff}
+  function dayData(n){return state.days[n]||{c:{},t:false,note:""}}
+  function score(n){const d=dayData(n),K=keysFor(n);let s=K.filter(k=>d.c[k]).length+(d.t?1:0);return s/(K.length+1)}
+  function stageOf(n){return STAGES.find(s=>n>=s.from&&n<=s.to)}
+
+  function moon(date){
+    const syn=29.530588853, ref=Date.UTC(2000,0,6,18,14);
+    let age=((date.getTime()-ref)/86400000)%syn; if(age<0)age+=syn;
+    let name;
+    if(age<1.85)name="новолуние";else if(age<5.54)name="растущий серп";else if(age<9.23)name="первая четверть";
+    else if(age<12.92)name="растущая луна";else if(age<16.61)name="полнолуние";else if(age<20.3)name="убывающая луна";
+    else if(age<23.99)name="последняя четверть";else if(age<27.68)name="убывающий серп";else name="новолуние";
+    const waxing=age<14.77;
+    return {age,name,waxing,isNew:age<1||age>syn-1,isFull:Math.abs(age-14.77)<1};
+  }
+
+  const $=id=>document.getElementById(id);
+
+  function renderMap(){
+    const map=$("map");map.textContent="";
+    const tn=dayNumToday();
+    STAGES.forEach(st=>{
+      const row=document.createElement("div");row.className="stage";row.style.setProperty("--c","var(--"+st.key+")");
+      const nm=document.createElement("div");nm.className="stage-name";
+      const b=document.createElement("b");b.textContent=st.name;const sp=document.createElement("span");sp.textContent=st.sub;
+      nm.append(b,sp);
+      const cells=document.createElement("div");cells.className="cells";
+      for(let n=st.from;n<=st.to;n++){
+        const btn=document.createElement("button");btn.type="button";btn.className="cell";
+        const sc=score(n);
+        if(sc>=0.7)btn.classList.add("full");
+        if(n===tn)btn.classList.add("today");
+        if(n===sel)btn.classList.add("sel");
+        const date=addDays(state.start,n-1);
+        btn.setAttribute("aria-label","День "+n+", "+date.getDate()+" "+MONTHS[date.getMonth()]+", выполнено "+Math.round(sc*100)+"%");
+        const f=document.createElement("span");f.className="fill";f.style.height=Math.round(sc*100)+"%";
+        const num=document.createElement("span");num.className="num";num.textContent=n;
+        btn.append(f,num);
+        const m=moon(date);
+        if(m.isNew||m.isFull){const dot=document.createElement("span");dot.className="moon "+(m.isFull?"fullm":"newm");btn.append(dot)}
+        btn.addEventListener("click",()=>{sel=n;renderAll()});
+        cells.append(btn);
+      }
+      row.append(nm,cells);map.append(row);
+    });
+  }
+
+  function renderDay(){
+    const n=sel, st=stageOf(n), d=dayData(n), date=addDays(state.start,n-1), m=moon(date);
+    const box=$("day");box.textContent="";box.style.setProperty("--c","var(--"+st.key+")");
+    const head=document.createElement("div");head.className="dayhead";
+    const meta=document.createElement("div");meta.className="meta";
+    const eb=document.createElement("span");eb.className="eyebrow";eb.textContent=st.name+" · день "+n+" из 40";
+    const h=document.createElement("h2");h.textContent=date.getDate()+" "+MONTHS[date.getMonth()]+", "+DAYNAMES[date.getDay()];
+    const pills=document.createElement("div");pills.className="pills";
+    const p1=document.createElement("span");p1.className="pill";p1.textContent=m.name+(m.isNew||m.isFull?"":(m.waxing?" · время привлечения":" · время очищения"));pills.append(p1);
+    if(date.getDay()===4){const p2=document.createElement("span");p2.className="pill jup";p2.textContent="четверг · день Юпитера";pills.append(p2)}
+    if(n===dayNumToday()){const p3=document.createElement("span");p3.className="pill";p3.textContent="сегодня";pills.append(p3)}
+    meta.append(eb,h,pills);
+    const nav=document.createElement("div");nav.className="nav";
+    const prev=document.createElement("button");prev.type="button";prev.textContent="← День "+(n-1);prev.disabled=n<=1;prev.addEventListener("click",()=>{sel=n-1;renderAll()});
+    const next=document.createElement("button");next.type="button";next.textContent="День "+(n+1)+" →";next.disabled=n>=40;next.addEventListener("click",()=>{sel=n+1;renderAll()});
+    if(n<=1)prev.textContent="← Назад";if(n>=40)next.textContent="Вперёд →";
+    nav.append(prev,next);
+    head.append(meta,nav);
+
+    const task=document.createElement("div");task.className="task";
+    const te=document.createElement("span");te.className="eyebrow";te.textContent="Задание дня";
+    const lab=document.createElement("label");lab.className="check";
+    const cb=document.createElement("input");cb.type="checkbox";cb.id="task-"+n;cb.checked=!!d.t;
+    cb.addEventListener("change",()=>{mut(n,x=>x.t=cb.checked)});
+    const tx=document.createElement("div");const th=document.createElement("h3");th.textContent=TASKS[n][0];const tp=document.createElement("p");tp.textContent=TASKS[n][1];
+    tx.append(th,tp);lab.append(cb,tx);task.append(te,lab);
+
+    const blocks=document.createElement("div");blocks.className="blocks";
+    CHECKS.forEach(g=>{
+      const bl=document.createElement("div");bl.className="block";
+      const h3=document.createElement("h3");h3.textContent=g.part;bl.append(h3);
+      g.items.filter(i=>!i[3]||n>=i[3]).forEach(([k,t,s])=>{
+        const l=document.createElement("label");l.className="check";
+        const c=document.createElement("input");c.type="checkbox";c.id=k+"-"+n;c.checked=!!d.c[k];
+        c.addEventListener("change",()=>{mut(n,x=>{x.c[k]=c.checked})});
+        const w=document.createElement("span");w.textContent=t;
+        if(s){const sm=document.createElement("small");sm.textContent=s;w.append(sm)}
+        l.append(c,w);bl.append(l);
+      });
+      blocks.append(bl);
+    });
+
+    const nf=document.createElement("div");nf.className="field";
+    const nl=document.createElement("label");nl.htmlFor="note-"+n;nl.textContent="Заметки: сны, знаки, что открылось в практике";
+    const ta=document.createElement("textarea");ta.id="note-"+n;ta.value=d.note||"";ta.placeholder="Каким был звук? Что приснилось? Какие совпадения заметили?";
+    ta.addEventListener("input",()=>{mut(n,x=>x.note=ta.value,true)});
+    nf.append(nl,ta);
+
+    box.append(head,task,blocks,nf);
+  }
+
+  function renderStats(){
+    let done=0,tasks=0;
+    for(let n=1;n<=40;n++){if(score(n)>=0.7)done++;if(dayData(n).t)tasks++}
+    const tn=Math.min(dayNumToday(),40);let streak=0;
+    let i=tn; if(i>=1&&!dayData(i).c.lakshmi)i--; // today may still be in progress
+    for(;i>=1;i--){if(dayData(i).c.lakshmi)streak++;else break}
+    $("st-days").textContent=done;$("st-mantra").textContent=streak;$("st-tasks").textContent=tasks;
+  }
+
+  function renderAll(){renderMap();renderDay();renderStats()}
+
+  // ---- saving
+  let timer=null;
+  function setSave(t){$("save").textContent=t}
+  function mut(n,fn,quiet){
+    const d=state.days[n]?JSON.parse(JSON.stringify(state.days[n])):{c:{},t:false,note:""};
+    fn(d);state.days[n]=d;
+    if(quiet){renderStats();renderMap()}else{renderMap();renderStats()}
+    schedule();
+  }
+  function schedule(){clearTimeout(timer);setSave("Сохраняется…");timer=setTimeout(persist,700)}
+  function persist(){
+    try{localStorage.setItem(LS,JSON.stringify(state));setSave("Сохранено на этом телефоне")}
+    catch(e){setSave("Браузер не даёт сохранять. Делайте резервную копию")}
+  }
+
+  $("start").value=state.start;
+  $("start").addEventListener("change",e=>{
+    if(!e.target.value)return;state.start=e.target.value;
+    const t=dayNumToday();sel=(t>=1&&t<=40)?t:1;renderAll();schedule();
+  });
+
+  const t0=dayNumToday();sel=(t0>=1&&t0<=40)?t0:1;
+  renderAll();setSave("Сохраняется на этом телефоне");
+
+  // ---- backup
+  const msg=t=>{$("b-msg").textContent=t};
+  $("b-copy").addEventListener("click",()=>{
+    const txt="SOROK40:"+JSON.stringify(state);
+    $("b-text").value=txt;
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(()=>msg("Скопировано. Вставьте в Telegram"),()=>{$("b-text").select();msg("Выделено. Скопируйте вручную")});
+    }else{$("b-text").select();msg("Выделено. Скопируйте вручную")}
+  });
+  $("b-restore").addEventListener("click",()=>{
+    let t=$("b-text").value.trim();
+    if(t.startsWith("SOROK40:"))t=t.slice(8);
+    try{
+      const p=JSON.parse(t);
+      if(!p||!p.start||typeof p.days!=="object")throw 0;
+      state={start:p.start,days:p.days};
+      $("start").value=state.start;
+      const tt=dayNumToday();sel=(tt>=1&&tt<=40)?tt:1;
+      renderAll();persist();msg("Прогресс восстановлен");
+    }catch(e){msg("Текст не похож на резервную копию. Вставьте его целиком")}
+  });
+})();
+</script>
+</body>
+</html>
